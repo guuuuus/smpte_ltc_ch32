@@ -96,12 +96,12 @@ unsigned long ltc_zeroMintime;
 unsigned long ltc_zeroMaxtime;
 unsigned long ltc_maxFPS24;
 unsigned long ltc_maxFPS25;
+EXTI_InitTypeDef ltc_extitc;
 
 void ltc_begin()
 {
 
     GPIO_InitTypeDef gpioin;
-    EXTI_InitTypeDef extitc;
 
     unsigned long ticksps;
 
@@ -154,17 +154,33 @@ void ltc_begin()
     gpioin.GPIO_Mode = GPIO_Mode_IPD;
     gpioin.GPIO_Speed = GPIO_Speed_50MHz;
 
-    extitc.EXTI_Line = EXTI_Line6;
-    extitc.EXTI_Mode = EXTI_Mode_Interrupt;
-    extitc.EXTI_Trigger = EXTI_Trigger_Rising_Falling;
-    extitc.EXTI_LineCmd = ENABLE;
+    ltc_extitc.EXTI_Line = EXTI_Line6;
+    ltc_extitc.EXTI_Mode = EXTI_Mode_Interrupt;
+    ltc_extitc.EXTI_Trigger = EXTI_Trigger_Rising_Falling;
+    ltc_extitc.EXTI_LineCmd = ENABLE;
 
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA | RCC_APB2Periph_AFIO, ENABLE);
 
-    EXTI_Init(&extitc);
+    EXTI_Init(&ltc_extitc);
     GPIO_Init(GPIOPORT, &gpioin);
     NVIC_EnableIRQ(EXTI7_0_IRQn);
-    NVIC_SetPriority(EXTI7_0_IRQn, 0x80);
+    NVIC_SetPriority(EXTI7_0_IRQn, 0xf0);
+}
+
+void ltc_pause()
+{
+    ltc_extitc.EXTI_LineCmd = DISABLE;
+    EXTI_Init(&ltc_extitc);
+    NVIC_DisableIRQ(EXTI7_0_IRQn);
+    ltc_state = LTC_ST_UNSYNC;
+}
+
+void ltc_play()
+{
+    ltc_extitc.EXTI_LineCmd = ENABLE;
+    EXTI_Init(&ltc_extitc);
+    NVIC_EnableIRQ(EXTI7_0_IRQn);
+    NVIC_SetPriority(EXTI7_0_IRQn, 0xf0);
 }
 
 unsigned char ltc_receiving()
